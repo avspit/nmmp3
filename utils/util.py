@@ -5,17 +5,13 @@ from utils import logger
 
 
 # инициализация иксов
-def init_x(h, n):
-    x = []
-    for i in range(0, n+1, 1):
-        x.append(const.A + h * i)
-    logger.log(text='иксы', value=x)
-    return x
+def init_x(n):
+    return np.linspace(const.A, const.B, n+1)
 
 
 # инициализация h
 def init_h(n):
-    return (const.B - const.A) / n
+    return [(const.B - const.A) / n] * (n+1)
 
 
 # инициализация матрицы А

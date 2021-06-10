@@ -21,11 +21,11 @@ def update_grafs():
     # Производим вычисления х и у
     for n in const.N_ARR:
         h = util.init_h(n)
-        logger.log(text='Начинаем вычисление для h:', value=str(h), force=True)
-        x = util.init_x(h, n)
-        y = fem.solve(A, C, n, x)
-        graph_axes.plot(x, y, label='h='+str(h))
-        logger.log(text='Вычисление завершено для h:', value=str(h), force=True)
+        logger.log(text='Начинаем вычисление для h:', value=str(h[0]), force=True)
+        x = util.init_x(n)
+        y = fem.solve(A, C, n, h, x)
+        graph_axes.plot(x, y, label='h='+str(h[0]))
+        logger.log(text='Вычисление завершено для h:', value=str(h[0]), force=True)
     graph_axes.legend()
     pylab.draw()
     pylab.show()

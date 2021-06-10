@@ -1,70 +1,99 @@
 import numpy as np
-import constants.variables as const
 import tridiagonalMatrixAlgorithm as tma
-import utils.logger as logger
-import utils.util as util
-import utils.equation as equation
 import utils.function as func
 
-def simpson(f, a, b, n):
-    h=(b-a)/n
-    k=0.0
-    x=a + h
-    for i in range(1,int(n/2 + 1)):
-        k += 4*equation.g(1,0,0,0,x)
-        x += 2*h
 
-    x = a + 2*h
-    for i in range(1,int(n/2)):
-        k += 2*equation.g(1,0,0,0,x)
-        x += 2*h
-    return (h/3)*(equation.g(1,0,0,0,a)+equation.g(1,0,0,0,b)+k)
+'''I use the piecewise linear Rayleigh-Ritz method to solve a second order  ordinary differential equation with a nonzero RHS
+The d.e is of the form :  - d/dx(  p(x)dy/dx) + q(x)y = f(x).
+The integration is performed on the interval 0<=x<=1'''
 
-# метод Ритца
-def solve(inputA, inputC, n, x):
-    y = np.zeros((n + 1, 1))  # результат решения
-    a = np.empty(shape=(n+1,n+1)) #np.zeros((n + 1, 1));
-    b = np.zeros((n + 1, 1));
 
-    for i in range(0, n+1, 1):
-        for j in range(i, min(i+3,n+1), 1):
-            if (j-2 < 0):
-                L=0
-            else:
-                L = max(x[j-2],0);
-            if (j+2 > len(x)-1):
-                len(x)-1
-            else:
-                U = min(x[j+2],1);
+def rhs(x):
+    '''This computes the rhs of the d.e.
+    INPUT: the variable x'''
+    return 3*x + np.cos(x**2)
 
-            # ... вычисляем a[i][j]
-            a[i][j] = simpson(func.dfi(n, 0.1, x[i], i)*func.dfi(n, 0.1, x[j], j) + func.fi(n, 0.1, x[i], i)*func.fi(n, 0.1, x[j], j), L, U, n)
 
-            if (i != j):
-                a[j][i] = a[i][j];
+N = 10
 
-        if (i <= n-3):
-            for j in range(i+4, n+1, 1):
-                a[i][j] = 0;
 
-        if (i-2 < 0):
-            L=0
-        else:
-            L = max(x[i-2], 0);
-        if (i+2 > len(x)-1):
-            len(x)-1
-        else:
-            U = min(x[i+2], 1);
+# basis_function(x)
 
-        # ... вычисляем b[i]
-        b[i] = simpson(
-            equation.g(inputA, inputC, 0.1, i, x[i]) * func.fi(n, 0.1, x[i], i),
-            L, U, n)
+# coefficient functions
+def p(x):
+    '''Defining the coefficient p in the d.e.'''
+    return -1
 
-    # вычисление вектора-решения методом прогонки
-    c = tma.solve(a, b);
 
-    for i in range(0, n+1, 1):
-        y[i] = c[i]
+def q(x):
+    '''Defining the coefficient q in the d.e.'''
+    return 0
+
+def solve(inputA, inputC, N, h, x):
+    # initialize vectors for computing integrals
+    Q1 = []
+    Q2 = []
+    Q3 = []
+    Q4 = []
+    Q5 = []
+    Q6 = []
+    # approximating the 6 integrals
+    for i in range(N-1):
+        q1 = (h[i] / 12) * (q(x[i]) + q(x[i+1]))
+        Q1.append(q1)
+        q2 = (h[i-1] / 12) * (3 * q(x[i]) + q(x[i-1]))
+        Q2.append(q2)
+        q3 = (h[i] / 12) * (3 * q(x[i]) + q(x[i+1]))
+        Q3.append(q3)
+        q4 = (1 / (2 * h[i-1])) * (p(x[i]) + p(x[i-1]))
+        Q4.append(q4)
+        q5 = (h[i-1] / 6) * (2 * rhs(x[i]) + rhs(x[i-1]))
+        Q5.append(q5)
+        q6 = (h[i] / 6) * (2 * rhs(x[i]) + rhs(x[i+1]))
+        Q6.append(q6)
+
+    # now compute  Q1,n , Q2,n , Q3,n , Q4,n Q4,n+1, Q5n, Q6,n
+
+    q1n = (h[N]/12)*(q(x[N-1]) + q(x[N]))
+    Q1.append(q1n)
+    q2n = (h[N-2] / 12) * (3 * q(x[N-1]) + q(x[N-2]))
+    Q2.append(q2n)
+    q3n = (h[N] / 12) * (3 * q(x[N-1]) + q(x[N]))
+    Q3.append(q3n)
+    q4n_last = (1 / (2 * h[N-1]) ) * (p(x[N]) + p(x[N-1]))
+    q4n_second_last = (1 / (2 * h[N-2]) ) * (p(x[N-1]) + p(x[N-2]))
+    Q4.append(q4n_second_last)
+    Q4.append(q4n_last)
+    q5n = (h[N-1] / 6) * (2 * rhs(x[N-1]) + rhs(x[N-2]))
+    Q5.append(q5n)
+    q6n = (h[N] / 6) * (2 * rhs(x[N-1]) + rhs(x[N]))
+    Q6.append(q6n)
+
+    alpha = np.zeros(N+1)
+    beta = np.zeros(N+1)
+    b = np.zeros(N+1)
+    a = np.zeros(N+1)
+    for i in range(N-1):
+        alpha[i] = Q4[i] + Q4[i+1] + Q2[i] + Q3[i]
+        beta[i] = - Q4[i+1] + Q1[i]
+        b[i] = Q5[i] + Q6[i]
+    alpha[N-1] = Q4[N-1] + Q4[N] + Q2[N-1] + Q3[N-1]
+    b[N-1] = Q5[N-1] + Q6[N-1]
+    a[0] = alpha[0]
+
+    c = tma.solve(N, a, b, alpha, beta)
+
+    u = func.basis(N, h, x)
+
+    # compute the error
+    y = np.dot(u, c)
+
+    # # plotting
+    # plt.grid()
+    # plt.plot(x, y)
+    # plt.legend(['Rayleigh-Ritz'])
+    # plt.xlabel(r'x')
+    # plt.ylabel(r'$\phi(x)$')
+    # plt.show()
 
     return y
