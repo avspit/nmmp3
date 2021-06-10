@@ -28,8 +28,14 @@ def solve(inputA, inputC, n, x):
 
     for i in range(0, n+1, 1):
         for j in range(i, min(i+3,n+1), 1):
-            L = max(x[j-2],0);
-            U = min(x[j+2],1);
+            if (j-2 < 0):
+                L=0
+            else:
+                L = max(x[j-2],0);
+            if (j+2 > len(x)-1):
+                len(x)-1
+            else:
+                U = min(x[j+2],1);
 
             # ... вычисляем a[i][j]
             a[i][j] = simpson(func.dfi(n, 0.1, x[i], i)*func.dfi(n, 0.1, x[j], j) + func.fi(n, 0.1, x[i], i)*func.fi(n, 0.1, x[j], j), L, U, n)
@@ -41,8 +47,14 @@ def solve(inputA, inputC, n, x):
             for j in range(i+4, n+1, 1):
                 a[i][j] = 0;
 
-        L = max(x[i - 2], 0);
-        U = min(x[i + 2], 1);
+        if (i-2 < 0):
+            L=0
+        else:
+            L = max(x[i-2], 0);
+        if (i+2 > len(x)-1):
+            len(x)-1
+        else:
+            U = min(x[i+2], 1);
 
         # ... вычисляем b[i]
         b[i] = simpson(

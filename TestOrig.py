@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 import matplotlib
 import pandas as pd
 
-#matplotlib.rcParams['text.usetex'] = True
 
 '''I use the piecewise linear Rayleigh-Ritz method to solve a second order  ordinary differential equation with a nonzero RHS
 The d.e is of the form :  - d/dx(  p(x)dy/dx) + q(x)y = f(x).
@@ -13,22 +12,19 @@ The integration is performed on the interval 0<=x<=1'''
 def rhs(x):
     '''This computes the rhs of the d.e.
     INPUT: the variable x'''
-    #return 2 * (np.pi ** 2) * np.sin(np.pi * x)
-    return 1
+    return 2 * (np.pi ** 2) * np.sin(np.pi * x)
 
 
-N = 10
+N = 100
 x = np.linspace(0, 1, N + 1)
 
-#h = []  # intialize space step
-#h0 = x[1] - x[0]
-#h.append(h0)
-#for i in range(N - 1):
-#    h.append(x[i + 1] - x[i])
-#hN = x[N] - x[N - 1]
-#h.append(hN)
-
-h = [0.1] * 11
+h = []  # intialize space step
+h0 = x[1] - x[0]
+h.append(h0)
+for i in range(N - 1):
+    h.append(x[i + 1] - x[i])
+hN = x[N] - x[N - 1]
+h.append(hN)
 
 
 def basis_function(x):
@@ -37,13 +33,13 @@ def basis_function(x):
     phi = np.zeros([N + 1, N + 1], dtype='float')  # initialize basis function
     for j in range(N - 1):
         for idx in range(N):
-            if (0 <= x[idx] <= x[j-1]):
+            if (0 <= x[idx] <= x[j - 1]):
                 phi[j, idx] = 0
-            elif (x[j-1] < x[idx] <= x[j]):
-                phi[j, idx] = (x[idx] - x[j-1]) / h[j-1]
+            elif (x[j - 1] < x[idx] <= x[j]):
+                phi[j, idx] = (x[idx] - x[j - 1]) / h[j - 1]
             elif (x[j] < x[idx] <= x[j + 1]):
-                phi[j, idx] = -(x[idx] - (x[j+1]) / h[j])
-            elif (x[j+1] < x[idx] <= 1):
+                phi[j, idx] = ((x[j + 1] - x[idx]) / h[j])
+            elif (x[j + 1] < x[idx] <= 1):
                 phi[j, idx] = 0
     return phi
 
@@ -58,8 +54,7 @@ def p(x):
 
 def q(x):
     '''Defining the coefficient q in the d.e.'''
-    #return np.pi ** 2
-    return 3*x + np.cos(x**2)
+    return np.pi ** 2
 
 
 # initialize vectors for computing integrals
@@ -71,13 +66,13 @@ Q5 = []
 Q6 = []
 # approximating the 6 integrals
 for i in range(N - 1):
-    q1 = (h[i] / 12) * (q(x[i]) + q(x[i + 1]))
+    q1 = (h[i] / 12) * (p(x[i]) + q(x[i + 1]))
     Q1.append(q1)
     q2 = (h[i - 1] / 12) * (3 * q(x[i]) + q(x[i - 1]))
     Q2.append(q2)
     q3 = (h[i] / 12) * (3 * q(x[i]) + q(x[i + 1]))
     Q3.append(q3)
-    q4 = (1 / 2 * h[i-1]) * (p(x[i]) + p(x[i - 1]))
+    q4 = (h[i - 1] / 2) * (p(x[i]) + p(x[i - 1]))
     Q4.append(q4)
     q5 = (h[i - 1] / 6) * (2 * rhs(x[i]) + rhs(x[i - 1]))
     Q5.append(q5)
@@ -141,19 +136,30 @@ u = basis_function(x)
 # plt.plot(u)
 # plt.show()
 
+# compute the error
+error = np.zeros(N + 1, dtype='float')
 phi_new = np.dot(u, c)
+for i in range(len(x)):
+    error[i] = (abs(phi_new[i] - np.sin(np.pi * x[i])))
 
-
+import pandas as pd
 
 df = pd.DataFrame(c, phi_new)
 print(df)
 
 # plotting
 plt.grid()
-plt.plot(x, phi_new, 'r')
-plt.legend(['Rayleigh-Ritz'])
+plt.plot(x, phi_new, x, np.sin(np.pi * x), 'r')
+plt.legend(['Rayleigh-Ritz', 'Exact Solution'])
 plt.xlabel(r'x')
 plt.ylabel(r'$\phi(x)$')
 plt.savefig('Results')
 plt.show()
 
+plt.grid()
+plt.loglog(np.linspace(0, N, N + 1), error, 'g')
+plt.title(r'\textbf{Error growth of the integrator}')
+plt.xlabel(r'x')
+plt.ylabel(r'Error')
+plt.savefig('Error')
+plt.show()
