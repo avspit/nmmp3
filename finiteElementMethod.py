@@ -3,38 +3,37 @@ import tridiagonalMatrixAlgorithm as tma
 import utils.function as func
 
 
-'''I use the piecewise linear Rayleigh-Ritz method to solve a second order  ordinary differential equation with a nonzero RHS
-The d.e is of the form :  - d/dx(  p(x)dy/dx) + q(x)y = f(x).
-The integration is performed on the interval 0<=x<=1'''
+'''
+Метод конечных элементов (метод Ритца) с помощью функций-крышек
+Вид уравнения :  - d/dx(  p(x)dy/dx) + C * q(x)y = A * f(x)
+'''
 
 
 def rhs(x, A):
     '''This computes the rhs of the d.e.
     INPUT: the variable x'''
-    return A
+    return A * x
 
 
 # basis_function(x)
 
 # coefficient functions
 def p(x):
-    '''Defining the coefficient p in the d.e.'''
     return -1
 
 
 def q(x, C):
-    '''Defining the coefficient q in the d.e.'''
     return C * (3*x + np.cos(x**2))
 
 def solve(A, C, N, h, x):
-    # initialize vectors for computing integrals
+    # Инициализируем векторы для вычисления интегралов
     Q1 = []
     Q2 = []
     Q3 = []
     Q4 = []
     Q5 = []
     Q6 = []
-    # approximating the 6 integrals
+    # аппроксимация 6 интегралов
     for i in range(N-1):
         q1 = (h[i] / 12) * (q(x[i],C) + q(x[i+1],C))
         Q1.append(q1)
